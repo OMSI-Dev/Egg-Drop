@@ -1,11 +1,21 @@
+
+
 float modifiedMap(float value, float inMin, float inMax, float outMin, float outMax) {
     // Map the input value from the input range to the output range
     float mappedValue = (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
     return mappedValue;
 }
 
-uint8_t mvToPercent() {
-  float measuredvbat = analogRead(A6);
+uint8_t mvToPercent()
+ {
+  float battAvg;
+  float measuredvbat;
+  for(byte i; i<100; i++)
+  { 
+    battAvg += analogRead(A6);
+  }
+
+  measuredvbat = battAvg/100;
   measuredvbat *= 2;    // we divided by 2, so multiply back
   measuredvbat *= 3.3;  // Multiply by 3.3V, our reference voltage
   measuredvbat /= 1024; // convert to voltage
