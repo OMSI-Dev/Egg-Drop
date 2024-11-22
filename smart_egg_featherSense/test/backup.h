@@ -42,11 +42,14 @@
 //        - change NODEID on about line 92 to change the name of the device.
 
 #include <Arduino.h>
-#include <Math.h>
-#include <SPI.h>
-
+#include <Adafruit_TinyUSB.h>
 //added for nRF52
 #include <bluefruit.h>
+//--------------------ACCELEROMETER LSM6DS3TRC
+#include <FastLED.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_LSM6DS3TRC.h>
+Adafruit_LSM6DS3TRC mma = Adafruit_LSM6DS3TRC();
 
 /* HRM Service Definitions
    Heart Rate Monitor Service:  0x180D
@@ -66,26 +69,19 @@ void disconnect_callback(uint16_t conn_handle, uint8_t reason);
 void cccd_callback(BLECharacteristic& chr, ble_gatts_evt_write_t* request);
 
 
-//--------------------ACCELEROMETER MMA8451
-#include <Wire.h>
 
-#include <Adafruit_Sensor.h>
-#include <Adafruit_LSM6DS3TRC.h>
-//#include <Adafruit_MMA8451.h>
 
-Adafruit_LSM6DS3TRC mma = Adafruit_LSM6DS3TRC();
+
 
 
 
 //*********************************************************************************************
 
 
-#define VBAT_PIN          (A7)
+#define VBAT_PIN          (A6)
 #define VBAT_MV_PER_LSB   (0.73242188F)   // 3.0V ADC range and 12-bit ADC resolution = 3000mV/4096
 //#define VBAT_DIVIDER      (0.71275837F)   // 2M + 0.806M voltage divider on VBAT = (2M / (0.806M + 2M))
 //#define VBAT_DIVIDER_COMP (1.403F)        // Compensation factor for the VBAT divider
-
-
 //*************************************************************************
 //                         EGG DROP VARIABLES
 //*************************************************************************
@@ -96,9 +92,9 @@ byte NODEID = 1;    // The unique identifier of this node. Default Range 1 - 6 w
 
 
 //These variables will be used to hold the x,y and z axis accelerometer values.
-int x = 10;
-int y = 10;
-int z = 10;
+float x = 10;
+float y = 10;
+float z = 10;
 double xg, yg, zg;
 char tapType = 0;
 
@@ -133,7 +129,7 @@ int decelSwitch = 0;
 
 int highestDecel = 0;
 
-int totAcc = 10;
+float totAcc = 10;
 
 //200g variables
 const int zAxis = A0;
@@ -145,7 +141,7 @@ int yNeutral = 0;
 int zNeutral = 0;
 
 long reading = 0;
-int totAcc2 = 0;
+float totAcc2 = 0;
 float xg2, yg2, zg2;
 
 byte sendRolling[sizeRolling / 2];
@@ -175,26 +171,41 @@ long lastActiveMode = 0;
 boolean activeLowPowerFlag = 0;
 
 
+// function headers 
 
-
+#include <battery.h>
+#include <mathFunc.h>
+#include <gforce.h>
 
 //------------------------------------------------------  BEGIN SETUP
 
+
+CRGB led[1];
+
 void setup()
 {
-
+  FastLED.addLeds<NEOPIXEL, 8>(led, 1);
+  FastLED.setBrightness(25);
   Serial.begin(115200);
-  while(!Serial)
+  pinMode(13,OUTPUT);
+   digitalWrite(13,LOW);
+
   Serial.println("OMSI Egg Drop");
   Serial.println("--------------------------------");
-
-
+  led[0] = CRGB::LimeGreen;
+  FastLED.show();
+  delay(100);
+  led[0] = CRGB::OrangeRed;
+  FastLED.show();
+  delay(100);
   // Initialise the Bluefruit module
   Serial.println("Initialise the Bluefruit nRF52 module");
   Bluefruit.begin();
-
   // Set the advertised device name (keep it short!)
   Serial.println("Setting Device Name to 'egg#'");
+  led[0] = CRGB::Purple;
+  FastLED.show();
+  delay(100);
 
   if (NODEID == 1) {
     Bluefruit.setName("Egg #1");
@@ -212,7 +223,9 @@ void setup()
     Bluefruit.setName("Smart Egg");
   }
 
-
+  led[0] = CRGB::Pink;
+  FastLED.show();
+  delay(500);
   // Set the connect/disconnect callback handlers
   Bluefruit.Periph.setConnectCallback(connect_callback);
   Bluefruit.Periph.setDisconnectCallback(disconnect_callback);
@@ -220,9 +233,11 @@ void setup()
   // Configure and Start the Device Information Service
   Serial.println("Configuring the Device Information Service");
   bledis.setManufacturer("OMSI");
-  bledis.setModel("Thomas Hudson nRF52");
+  bledis.setModel("Feather Sense 52840");
   bledis.begin();
 
+  led[0] = CRGB::Black;
+  FastLED.show();
   // Start the BLE Battery Service and set it to 100%
   Serial.println("Configuring the Battery Service");
   blebas.begin();
@@ -237,11 +252,13 @@ void setup()
   startAdv();
 
   // Start Advertising
-  Serial.println("Ready Player One!!!");
+  Serial.print("Egg ");
+  Serial.print(NODEID);
+  Serial.println(" ready to connect.");
   Serial.println("\nAdvertising");
   Bluefruit.Advertising.start();
 
-  Serial.println("setting BLE power to -16");
+  Serial.println("setting BLE power to -8");
   Bluefruit.setTxPower(-16);
 
 
@@ -259,48 +276,54 @@ void setup()
 
   Wire.setClock(10000);
 
-  if (! mma.begin_I2C()) {
+  if (!mma.begin_I2C()) {
     Serial.println("Couldnt start");
     while (1);
   }
+
   Serial.println("LSM6DS3TRC found!");
 
-  mma.setAccelRange(LSM6DS_ACCEL_RANGE_2_G);
+  mma.setAccelRange(LSM6DS_ACCEL_RANGE_16_G);
 
-  //Serial.print("Range = "); Serial.print(2 << mma.getRange());
-  //Serial.println("G");
-
-  //capture the near neutral position of the 200G accerometer..at 12bit or 50% of 0-4095=2048
+  //capture the near neutral position
   long x2 = 0;
   long y2 = 0;
   long z2 = 0;
-  int temp = analogRead(xAxis);  //read and throw away
-  for (int i = 0; i < 20; i++) {
-    int x1 = analogRead(xAxis);
+
+  for (int i = 0; i < 20; i++) 
+  {
+    sensors_event_t accel;
+    sensors_event_t gyro;
+    sensors_event_t temp;
+    mma.getEvent(&accel, &gyro, &temp);
+
+    int x1 = accel.acceleration.x;
     delay(5);
-    x1 = analogRead(xAxis);
+    x1 = accel.acceleration.x;
     x2 = x1 + x2;
     delay(5);
-    int y1 = analogRead(yAxis);
+    int y1 = accel.acceleration.y;
     y2 = y1 + y2;
     delay(5);
-    int z1 = analogRead(zAxis);
+    int z1 = accel.acceleration.z ;
     z2 = z1 + z2;
     delay(5);
   }
+
   xNeutral = (int)x2 / 20;
+  Serial.print("x Base:");
   Serial.println(xNeutral);
+
   yNeutral = (int)y2 / 20;
+  Serial.print("y Base:");
   Serial.println(yNeutral);
+
   zNeutral = (int)z2 / 20;
+  Serial.print("z Base:");
   Serial.println(zNeutral);
 
 
   Serial.println("leaving setup");
-
-  // Set max power. Accepted values are: -40, -30, -20, -16, -12, -8, -4, 0, 4
-  //Bluefruit.setTxPower(-20);  //defaults to high power and stays on high power for 20min from dead battery while first charging
-
 }
 
 void startAdv(void)
@@ -324,6 +347,7 @@ void startAdv(void)
      For recommended advertising interval
      https://developer.apple.com/library/content/qa/qa1931/_index.html
   */
+
   Bluefruit.Advertising.restartOnDisconnect(true);
   Bluefruit.Advertising.setInterval(32, 244);    // in unit of 0.625 ms
   Bluefruit.Advertising.setFastTimeout(30);      // number of seconds in fast mode
@@ -350,6 +374,7 @@ void setupHRM(void)
   //not sure why this is needed
   uint8_t hrmdata1[] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }; // this used to send out data about the heart rate meter to the client
   hrmc.notify(hrmdata1, 10);    //important... tells it's sending 10 bytes              // Use .notify instead of .write!
+  Serial.println("Set Heart Beat.");
 }
 
 
@@ -361,17 +386,18 @@ void connect_callback(uint16_t conn_handle)
   char central_name[32] = { 0 };
   connection->getPeerName(central_name, sizeof(central_name));
 
-  Serial.print("Connected to ");
+  Serial.print("Connected to: ");
   Serial.println(central_name);
-  Serial.println("connected here");
 
   //going to high power
   Serial.println("going into high transmission power mode sense we're connecting to BLE");
-  Bluefruit.setTxPower(4); // goes to high power when connecting bo ble
+  Bluefruit.setTxPower(5); // goes to high power when connecting bo ble
+ 
 
   lastActiveMode = now; //indicating that we have activity.... so we stay in high power mode for at least 30 min TBD
   bleConnected = true; //moved out of cccd_callback as that stopped working with DFU update 5/15/19
   lastTimeSentBatteryData = 0; //trigger battery send immediately after connected
+   Serial.println("Power Set and reset active mode...");
 }
 
 void disconnect_callback(uint16_t conn_handle, uint8_t reason)
@@ -405,44 +431,43 @@ void cccd_callback(BLECharacteristic& chr, uint16_t cccd_value)
     }
   }
 }
-//------------------------------------------------------  END SETUP
 
-
-
-//-------------------------------------------------------BEGIN LOOP
 
 void loop(void)
 {
   now = millis();
-
   if (bleConnected)
   {
+    
     if (startFreefall == 0 && captureDeceleration == 0) //if nothing is happening send battery data
     {
       if (now - lastTimeSentBatteryData > sendBatteryInterval) // send battery data every 30 seconds
       {
-        sendBatteryData();
+        //sendBatteryData();
         lastTimeSentBatteryData = now;
       }
     }
 
-
-    if (startFreefall == 0 && captureDeceleration == 0) { //if nothing is happening keep a rolling average of acceleration values
+    if (startFreefall == 0 && captureDeceleration == 0) 
+    { //if nothing is happening keep a rolling average of acceleration values
       sensors_event_t accel;
       sensors_event_t gyro;
       sensors_event_t temp;
       mma.getEvent(&accel, &gyro, &temp);
-      x = accel.acceleration.x / 10;
-      y = accel.acceleration.y / 10;
-      z = accel.acceleration.z / 10;
+      x = accel.acceleration.x;
+      y = accel.acceleration.y;
+      z = accel.acceleration.z;
 
-      totAcc = sqrt(x * x + y * y + z * z);
-
+      totAcc = x + y + z;
+      Serial.print("Total acc: ");
+      Serial.println(totAcc);
+      
       rollingAcc[incrementRolling] = totAcc;      //keeps track of thrown or dropped
       incrementRolling++;
       if (incrementRolling == sizeRolling) {
         incrementRolling = 0;
       }
+
       if (totAcc > 455) //device is getting moved around... should be high power.. resting totACC state is ~404
       {
         //Serial.print("device is moving around:");
@@ -451,7 +476,7 @@ void loop(void)
         lastActiveMode = now;
         if (activeLowPowerFlag == 1) // just coming out of low power mode... go to high power transmission
         {
-          Bluefruit.setTxPower(4);
+          Bluefruit.setTxPower(8);
           Serial.println("device is moving around after being in Low Power mode for 45min, going to high power mode");
           activeLowPowerFlag = 0;
         }
@@ -469,12 +494,14 @@ void loop(void)
 
 
 
-    if (totAcc <= 50 && debounceFreefall == 0 && startFreefall == 0 && captureDeceleration == 0) { //accerlation is less than a 10th ***OBJECT IN FREEFALL***
+    if (totAcc <= 50 && debounceFreefall == 0 && startFreefall == 0 && captureDeceleration == 0)
+     { //accerlation is less than a 10th ***OBJECT IN FREEFALL***
       startFreefallTime = now;
       debounceFreefall = 1; //set debounce flag
     }
 
-    if (totAcc <= 50 && now - startFreefallTime > freeFallThreshold && debounceFreefall == 1 && startFreefall == 0 && captureDeceleration == 0) { //passed debounce test for free-fall, ***OBJECT IN FREEFALL***
+    if (totAcc <= 50 && now - startFreefallTime > freeFallThreshold && debounceFreefall == 1 && startFreefall == 0 && captureDeceleration == 0) {
+       //passed debounce test for free-fall, ***OBJECT IN FREEFALL***
       startFreefall = 1;
       zero200gAxis();
       incrementDecel = 0;
@@ -488,15 +515,18 @@ void loop(void)
 
     if (startFreefall == 1) { //start monitoring for deceleration
       debounceFreefall = 0; //release flag
-      read200G();              //switch to 200G accelerometer
+      totAcc2 = read200G(xNeutral,yNeutral,zNeutral);              //switch to 200G accelerometer
+      // Serial.print("total 200g reading: ");
+      // Serial.println(totAcc2);
     }
 
-    if (now - startFreefallTime > 3000) { //3 seconds have passed in freefall there was no deceleration(impact)... restart everything
+    if (now - startFreefallTime > 3000) { 
+      //3 seconds have passed in freefall there was no deceleration(impact)... restart everything
       startFreefall = 0;
       debounceFreefall = 0;
     }
 
-    if (totAcc2 >= 4 && startFreefall == 1 && captureDeceleration == 0) { //freefall has ended, only monitor deceleration for another 15ms
+    if (totAcc2 >= 10 && startFreefall == 1 && captureDeceleration == 0) { //freefall has ended, only monitor deceleration for another 15ms
       captureDeceleration = 1;
       startDeceleration = now;
       decelerationTime = 0;
@@ -506,7 +536,8 @@ void loop(void)
     }
 
 
-    if (captureDeceleration == 1) { //start monitor time as the egg hits the ground
+    if (captureDeceleration == 1) 
+    { //start monitor time as the egg hits the ground
       decelerationTime = now - startDeceleration;
       if (incrementDecel == sizeEggDecel) {
         incrementDecel = 0;
@@ -521,7 +552,8 @@ void loop(void)
       }
     }
 
-    if (decelerationTime > 50) { //everything stops after 50ms has passed
+    if (decelerationTime > 50) 
+    { //everything stops after 50ms has passed
 
       decelerationTime = 0;
       captureDeceleration = 0;
@@ -570,7 +602,16 @@ void loop(void)
       } else {
         Serial.println("BLE not connected");
       }
-      delay(2000);
+
+      Serial.println("************************");
+      for(int i = 0; i < 9; i++)
+      {
+        
+        Serial.print(eggData[i]);
+        Serial.print(",");
+
+      }
+      Serial.println("************************");
     }
   } else
   {
@@ -580,10 +621,12 @@ void loop(void)
     if (now - lastActiveMode > 1800000) //after 30 minutes of not connecting... go to low power mode
     {
       goingIntoLowPowerFlag = 0;
-      Serial.println("BLE not connected..& greater than 30min of inactivity, setting flag for low power... ");
+      Serial.println("BLE not connected and greater than 30 min of inactivity, setting flag for low power... ");
       lastActiveMode = now;
     }
   }
+
+
   if (goingIntoLowPowerFlag == 0 && alreadyWent == 0) //going to low power mode!
   {
     Serial.println("going into low power mode");
@@ -592,294 +635,10 @@ void loop(void)
     waitForEvent();  //low power?
 
   }
+
 }
 
 //******************************************************** END LOOP
-
-
-void sendBatteryData()
-{
-  // Get a raw ADC reading
-  int vbat_raw = readVBAT();
-  // Convert from raw mv to percentage (based on LIPO chemistry)
-  uint8_t vbat_per = mvToPercent(vbat_raw * VBAT_MV_PER_LSB);
-  // Convert the raw value to compensated mv, taking the resistor-
-  // divider into account (providing the actual LIPO voltage)
-  // ADC range is 0..3000mV and resolution is 12-bit (0..4095),
-  // VBAT voltage divider is 2M + 0.806M, which needs to be added back
-  //float vbat_mv = (float)vbat_raw * VBAT_MV_PER_LSB * VBAT_DIVIDER_COMP;
-  byte percent = vbat_per;
-  //Serial.print("Percent voltage: " ); Serial.print(percent); Serial.println("%");
-
-  // 'v' starts the logging followed nodeID and 22%
-  // as characters "v122"
-  // as keycodes "86" "49" "50" "50"
-
-  uint8_t batteryData[10] = {0}; //making it 10 bytes as equal to eggData[]
-  batteryData[0] = 86;
-  batteryData[1] = NODEID;
-  batteryData[2] = percent;
-  batteryData[3] = 0; //future
-  batteryData[4] = 0; //future
-  batteryData[5] = 0; //future
-  batteryData[6] = 0; //future
-  batteryData[7] = 0; //future
-  batteryData[8] = 0; //future
-  batteryData[9] = 0; //future
-  if (Bluefruit.connected()) {
-    //Serial.println("BLE connected, sending batteryData[10]");
-    hrmc.notify(batteryData, sizeof(batteryData));   // Note: We use .notify instead of .write!
-  }
-  blebas.write(percent);
-}
-
-
-
-byte findFirstByte(int freefall) {
-
-  uint8_t firstByte = 0;
-  //first 8 bits
-  for (int i = 7; i > 0; i--)
-  {
-    byte x = bitRead(freefall, i);
-    if (x)
-    {
-      bitSet(firstByte, i);
-    }
-    //    Serial.print(bitRead(freefall, i));
-    //    Serial.print(",");
-  }
-  byte x = bitRead(freefall, 0);
-  if (x)
-  {
-    bitSet(firstByte, 0);
-  }
-  //  Serial.print(bitRead(freefall,0));
-  //  Serial.println();
-  //  Serial.println(firstByte);
-  return firstByte;
-}
-
-byte findSecondByte(int freefall) {
-
-  byte secondByte = 0;
-  //bits 8 to 15
-  int j = 7;
-  for (int i = 15; i > 7; i--) {
-    byte x = bitRead(freefall, i);
-    if (x) {
-      bitSet(secondByte, j);
-    }
-    j--;
-    //    Serial.print(bitRead(freefall, i));
-    //    Serial.print(",");
-  }
-  //  Serial.println();
-  //  Serial.println(secondByte);
-  return secondByte;
-}
-
-
-
-
-int findHighestDecel() {
-  int highValue = 0;
-  int impactIncrement = 0;
-  Serial.print("deceleration starting at impact(> 4gs) for 50ms:  ");
-  for (int i = 0; i < incrementEnd; i++) {
-    Serial.print(eggDecel[i]);
-    Serial.print(",");
-    if (eggDecel[i] > highValue) {
-      highValue = eggDecel[i];
-      impactIncrement = i;
-    }
-  }
-  Serial.println();
-  Serial.print("high value: ");
-  Serial.print(highValue);
-
-  memset(eggDecel, 0, sizeof(eggDecel));
-  Serial.println();
-
-  for (int i = incrementDecel; i < sizeEggDecel; i++) {
-    //Serial.print(eggDecelY[i]);
-    //Serial.print(",");
-  }
-  for (int i = 0; i < incrementDecel; i++) {
-    //Serial.print(eggDecelY[i]);
-    //Serial.print(",");
-  }
-  //Serial.println();
-
-  for (int i = incrementDecel; i < sizeEggDecel; i++) {
-    //Serial.print(eggDecelX[i]);
-    //Serial.print(",");
-  }
-  for (int i = 0; i < incrementDecel; i++) {
-    //Serial.print(eggDecelX[i]);
-    //Serial.print(",");
-  }
-  //Serial.println();
-
-  for (int i = incrementDecel; i < sizeEggDecel; i++) {
-    //Serial.print(eggDecelZ[i]);
-    //Serial.print(",");
-  }
-  for (int i = 0; i < incrementDecel; i++) {
-    //Serial.print(eggDecelZ[i]);
-    //Serial.print(",");
-  }
-  //Serial.println();
-
-
-  for (int i = incrementDecel; i < sizeEggDecel; i++) {
-    //Serial.print(eggDecelO[i]);
-    //Serial.print(",");
-  }
-  for (int i = 0; i < incrementDecel; i++) {
-    //Serial.print(eggDecelO[i]);
-    //Serial.print(",");
-  }
-  //Serial.println();
-  //Serial.print("DecelX: ");
-  //Serial.println(eggDecelX[impactIncrement]);
-  //Serial.print("DecelY: ");
-  //Serial.println(eggDecelY[impactIncrement]);
-  //Serial.print("DecelZ: ");
-  //Serial.println(eggDecelZ[impactIncrement]);
-  double xzAverage = sqrt(sq(eggDecelX[impactIncrement]) + sq(eggDecelZ[impactIncrement]));
-  //Serial.println(xzAverage);
-  impactAngle = atan(xzAverage / eggDecelY[impactIncrement]);
-  //Serial.println(impactAngle);
-  impactAngle = (impactAngle * 4068) / 71; //radians to degrees
-  //Serial.println(impactAngle);
-  if (eggDecelO[impactIncrement] == 0) { //egg hit upside down
-    impactAngle = 180 - impactAngle;
-  }
-  impactAngle = impactAngle;
-  Serial.print("impact angle(0-180): ");
-  Serial.println(impactAngle);
-
-  return highValue;
-}
-
-
-byte findAverageRolling() {
-  int highValue = 0;
-  int numberOf = 0;
-  int byteToSend = 0;
-  for (int i = 0; i < sizeRolling; i++) {
-    if (rollingAcc[i] > 500) {
-      numberOf++;
-      highValue = highValue + rollingAcc[i];
-    }
-  }
-  if (numberOf > 0) {
-    byteToSend = highValue / numberOf;
-    return (byte)byteToSend;
-  } else {
-    byteToSend = 0;
-    return (byte)byteToSend;
-  }
-}
-
-
-
-
-void zero200gAxis() { //adafruit capacitors are selected for 500hz reading.. we're probably closer to 1000hz here
-
-  long x2 = 0;
-  long y2 = 0;
-  long z2 = 0;
-  int x1 = analogRead(xAxis);  //read and throw away
-  delayMicroseconds(200);
-  for (int i = 0; i < 5; i++) {
-    x1 = analogRead(xAxis);
-    x2 = x1 + x2;
-    delayMicroseconds(200);
-    int y1 = analogRead(yAxis);
-    y2 = y1 + y2;
-    delayMicroseconds(200);
-    int z1 = analogRead(zAxis);
-    z2 = z1 + z2;
-    delayMicroseconds(200);
-  }
-  xNeutral = (int)x2 / 5;
-  //Serial.println(xNeutral);
-  yNeutral = (int)y2 / 5;
-  //Serial.println(yNeutral);
-  zNeutral = (int)z2 / 5;
-  //Serial.println(zNeutral);
-
-}
-
-
-
-void read200G() {
-  // y is up down orientation
-  //x and z are the axis that are the symetrical orienatation
-
-  int x1 = analogRead(xAxis);
-  delayMicroseconds(200);
-  int y1 = analogRead(yAxis);
-  delayMicroseconds(200);
-  int z1 = analogRead(zAxis);
-  delayMicroseconds(200);
-
-  if (x1 >= xNeutral) {
-    x1 = x1 - xNeutral;
-  } else {
-    x1 = xNeutral - x1;
-  }
-  if (y1 >= yNeutral) {
-    y1 = y1 - yNeutral;
-    //Serial.println("positive");
-    //landing upside down
-    orientation = 0;
-  } else {
-    y1 = yNeutral - y1;
-    //Serial.println("negative");
-    //landing right side up
-    orientation = 1;
-  }
-  if (z1 >= zNeutral) {
-    z1 = z1 - zNeutral;
-  } else {
-    z1 = zNeutral - z1;
-  }
-
-  // using +/- 8 Gs is 16/1024 = 0.0156
-  // using +/- 16 Gs is 32/1024 = 0.0312
-
-  // using +/- 200 Gs is 200/1024 = 0.1953
-  // using +/- 200 Gs is 200/2048 = .04883 for 12 bit ... was 200 divided by 4095
-
-  //@ 3.6 volt reverence, 1.65/3.6 = 1877/4096 so 200/1877 = 0.1066
-
-  xg2 = x1 * 0.1066;
-  yg2 = y1 * 0.1066;
-  zg2 = z1 * 0.1066;
-
-  long totAccTemp = sqrt(xg2 * xg2 + yg2 * yg2 + zg2 * zg2);
-  totAcc2 = (int)totAccTemp;
-  //Serial.println(totAcc2);
-
-}
-
-
-
-void Blink(byte PIN, byte DELAY_MS, byte loops)
-{
-  for (byte i = 0; i < loops; i++)
-  {
-    digitalWrite(PIN, HIGH);
-    delay(DELAY_MS);
-    digitalWrite(PIN, LOW);
-    delay(DELAY_MS);
-  }
-}
-
-
 
 /**
    RTOS Idle callback is automatically invoked by FreeRTOS
@@ -917,53 +676,4 @@ void rtos_idle_callback(void)
   waitForEvent();
 }
 
-int readVBAT(void) {
-  int raw;
 
-  // Set the analog reference to 3.0V (default = 3.6V)
-  analogReference(AR_INTERNAL_3_0);
-
-  // Set the resolution to 12-bit (0..4095)
-  //analogReadResolution(12); // Can be 8, 10, 12 or 14
-
-  // Let the ADC settle
-  delay(1);
-
-  // Get the raw 12-bit, 0..3000mV ADC value
-  raw = analogRead(VBAT_PIN);
-  analogReference(AR_DEFAULT);
-
-  return raw;
-}
-
-uint8_t mvToPercent(float mvolts) {
-  uint8_t battery_level;
-  //Serial.println(mvolts);
-
-  if (mvolts >= 2900)
-  {
-    battery_level = 100;
-  }
-  else if (mvolts > 2800)
-  {
-    battery_level = 100 - ((2900 - mvolts) * 58) / 100;
-  }
-  else if (mvolts > 2740)
-  {
-    battery_level = 42 - ((2800 - mvolts) * 24) / 160;
-  }
-  else if (mvolts > 2440)
-  {
-    battery_level = 18 - ((2740 - mvolts) * 12) / 300;
-  }
-  else if (mvolts > 2100)
-  {
-    battery_level = 6 - ((2440 - mvolts) * 6) / 340;
-  }
-  else
-  {
-    battery_level = 0;
-  }
-
-  return battery_level;
-}
