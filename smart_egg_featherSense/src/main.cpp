@@ -45,14 +45,16 @@
 #include <Adafruit_TinyUSB.h>
 //added for nRF52
 #include <bluefruit.h>
+
 //--------------------ACCELEROMETER LSM6DS3TRC
 #include <FastLED.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_LSM6DS3TRC.h>
 #include <Adafruit_BMP280.h>
-
-
-
+#include <Timer.h>
+ 
+MoToTimer waitTimer;
+uint16_t waitTime = 5000;
 
 Adafruit_LSM6DS3TRC mma = Adafruit_LSM6DS3TRC();
 Adafruit_BMP280 bmp280; 
@@ -99,7 +101,9 @@ byte NODEID = 6;    // The unique identifier of this node. Default Range 1 - 6 w
 
 #define calibrationRate 100
 #define freefallRate 50 * 3
-#define freefallEndRate 20 * 3
+#define freefallEndRate 30 * 3
+#define resetTimeout 3500
+#define decelerationThreshold 45
 
 //These variables will be used to hold the x,y and z axis accelerometer values.
 float x = 10;
@@ -110,7 +114,7 @@ char tapType = 0;
 
 
 long now = 0;
-int startFreefall = 0;
+bool startFreefall = 0;
 long startFreefallTime = 0;
 long totalFreefallTime = 0;
 long startDeceleration = 0;
@@ -130,7 +134,7 @@ int orientation = 0;
 
 int rollingAcc[sizeRolling];
 
-int captureDeceleration = 0;
+bool captureDeceleration = 0;
 int incrementDecel = 0;
 int incrementRolling = 2;
 
@@ -139,7 +143,7 @@ int decelSwitch = 0;
 
 int highGforce = 0;
 
-float totAcc = 10;
+float TotalAccel = 10;
 
 int xNeutral = 0;
 int yNeutral = 0;
@@ -155,7 +159,7 @@ byte averageValueThrow = 0;
 
 char radioPacketSend[30];
 
-int debounceFreefall = 0;
+bool debounceFreefall = 0;
 
 String stringSend;
 
@@ -173,7 +177,7 @@ boolean alreadyWent = 0; //.. sets to into low power after above 20min flag is m
 boolean activeModeFlag = true;
 long lastActiveMode = 0;
 
-boolean activeLowPowerFlag = 0;
+bool activeLowPowerFlag = 0;
 
 // function headers 
 
@@ -217,6 +221,7 @@ void setup()
   FastLED.show();
   delay(100);
 
+  //Set proper egg name, it has to be exactly this. It is hardcoded into the webapp
   if (NODEID == 1) {
     Bluefruit.setName("Blue Egg #1");
   } else if (NODEID == 2) {
@@ -348,7 +353,7 @@ void connect_callback(uint16_t conn_handle)
 
   //going to high power
   Serial.println("Setting to full transmission power");
-  Bluefruit.setTxPower(16); // goes to high power when connecting bo ble
+  Bluefruit.setTxPower(12); // goes to high power when connecting bo ble
  
 
   lastActiveMode = now; //indicating that we have activity.... so we stay in high power mode for at least 30 min TBD
@@ -399,7 +404,7 @@ void loop(void)
   if (bleConnected)
   {
     
-    if (startFreefall == 0 && captureDeceleration == 0) //if nothing is happening send battery data
+    if (!startFreefall && !captureDeceleration) //if nothing is happening send battery data
     {
       if (now - lastTimeSentBatteryData > sendBatteryInterval) // send battery data every 30 seconds
       {
@@ -408,37 +413,35 @@ void loop(void)
       }
     }
 
-    if (startFreefall == 0 && captureDeceleration == 0) 
+    if (!startFreefall && !captureDeceleration) 
     { 
       //if nothing is happening keep a rolling average of acceleration values
       sensors_event_t accel;
       sensors_event_t gyro;
       sensors_event_t temp;
       mma.getEvent(&accel, &gyro, &temp);
-      x = accel.acceleration.x;
-      y = accel.acceleration.y;
-      z = accel.acceleration.z;
+      x = abs(accel.acceleration.x - xNeutral);
+      y = abs(accel.acceleration.y - yNeutral);
+      z = abs(accel.acceleration.z - zNeutral);
 
-      totAcc = abs(x + y + z);
+      TotalAccel = abs(x + y + z);
       
-      //Serial.print("Total Acc for freefall: ");
-      //Serial.println(totAcc);
+      Serial.print("X: ");
+      Serial.println(x);
+      // Serial.print("Y: ");
+      // Serial.println(y);
+      // Serial.print("Z: ");
+      // Serial.println(z);
 
-      
-      // rollingAcc[incrementRolling] = totAcc;      //keeps track of thrown or dropped
-      // incrementRolling++;
-      // if (incrementRolling == sizeRolling) {
-      //   incrementRolling = 0;
-      // }
-
-      if (totAcc > 20) //device is getting moved around... should be high power.. resting totACC state is ~404
+      // Serial.print("Acceleration while nothing is happening: ");
+      // Serial.println(TotalAccel);
+                 
+      if (TotalAccel > 10) //The device as moved, wakeup if sleeping
       {
-
-        //activeModeFlag = true;
         lastActiveMode = now;
-        if (activeLowPowerFlag == 1) // just coming out of low power mode... go to high power transmission
+        if (activeLowPowerFlag) //Wakeing up set TX to full
         {
-          Bluefruit.setTxPower(8);
+          Bluefruit.setTxPower(12);
           Serial.println("device is moving around after being in Low Power mode for 45min, going to high power mode");
           activeLowPowerFlag = 0;
         }
@@ -447,7 +450,7 @@ void loop(void)
     }
 
 
-    //40 minutes has passed without activity, going into low power transmission mode
+    //set to low power due to inactivity
     if (now - lastActiveMode > inactivityThreshold)
     {
       Serial.println("going into low transmission power mode after 40min of inactivity while ble connected");
@@ -456,18 +459,17 @@ void loop(void)
       activeLowPowerFlag = 1;
     }
 
-
-
-    if(totAcc <= 5 && debounceFreefall == 0 && startFreefall == 0 && captureDeceleration == 0)
+    if(x > 4 && !debounceFreefall && !startFreefall && !captureDeceleration)
     { //accerlation is less than a 10th ***OBJECT IN FREEFALL***
       startFreefallTime = now;
       debounceFreefall = 1; //set debounce flag
     }
 
-    if (totAcc <= 8 && now - startFreefallTime > freeFallThreshold && debounceFreefall == 1 && startFreefall == 0 && captureDeceleration == 0) {
+    if (x >= 8 && now - startFreefallTime > freeFallThreshold && debounceFreefall && !startFreefall && !captureDeceleration) 
+    {
        //passed debounce test for free-fall, ***OBJECT IN FREEFALL***
       startFreefall = 1;
-      zero200gAxis();
+
       incrementDecel = 0;
       Serial.println("free falling"); 
       Serial.print("Freefall time: ");
@@ -475,27 +477,30 @@ void loop(void)
 
     }
 
-    if (totAcc > 55 && debounceFreefall == 1) {  //exits first loop... false throw...
+    if (TotalAccel > 55 && debounceFreefall == 1) 
+    {
+      //exits first loop... false throw...
       debounceFreefall = 0;
       Serial.print("Assumed false throw");
     }
 
 
-    if (startFreefall == 1) { 
+    if (startFreefall) 
+    { 
       //start monitoring for deceleration
       debounceFreefall = 0; //release flag
-      totAcc2 = read200G(xNeutral,yNeutral,zNeutral);              //switch to 200G accelerometer
-      // Serial.print("Total Accel reading: ");
-      // Serial.println(totAcc2);
+      totAcc2 = retrieveMovement(xNeutral,yNeutral,zNeutral); 
     }
 
-    if (now - startFreefallTime > 2750) { 
+    if (now - startFreefallTime > resetTimeout) 
+    { 
       //3 seconds have passed in freefall there was no deceleration(impact)... restart everything
       startFreefall = 0;
       debounceFreefall = 0;
     }
 
-    if (totAcc2 >= freefallEndRate && startFreefall == 1 && captureDeceleration == 0) { 
+    if (totAcc2 >= freefallEndRate && startFreefall && !captureDeceleration) 
+    { 
       //freefall has ended, only monitor deceleration for another 15ms
       Serial.print("Total Accel at freefall end: ");
       Serial.println(totAcc2);
@@ -509,28 +514,27 @@ void loop(void)
     }
 
 
-    if (captureDeceleration == 1) 
+    if(captureDeceleration) 
     { 
       //start monitor time as the egg hits the ground
       decelerationTime = now - startDeceleration;
-      // Serial.print("Decel Time:");
-      // Serial.println(decelerationTime);
 
-      if (incrementDecel == sizeEggDecel) {
+      if (incrementDecel == sizeEggDecel) 
+      {
         incrementDecel = 0;
       }
 
       if (incrementDecel < sizeEggDecel) 
       {
-        eggDecel[incrementDecel] = totAcc2;   //log 200G accelerometer
-
+        eggDecel[incrementDecel] = totAcc2;
         eggDecelO[incrementDecel] = orientation;
         incrementDecel++;
       }
     }
 
-    if (decelerationTime > 50) 
-    { //everything stops after 50ms has passed
+    if (decelerationTime > decelerationThreshold && !waitTimer.running()) 
+    { 
+      
       Serial.println("Deceleration time reached...");
       decelerationTime = 0;
       captureDeceleration = 0;
@@ -543,32 +547,28 @@ void loop(void)
       uint8_t eggData[10] = {0};
 
       //Create data packet
-       findHeight(totalFreefallTime);
-      // eggDecelX[incrementDecel] = xg2;   //log 200G accelerometer
-      // eggDecelY[incrementDecel] = yg2;   //log 200G accelerometer
-      // eggDecelZ[incrementDecel] = zg2;   //log 200G accelerometer
+      findHeight(totalFreefallTime);
+
       eggData[0] = 65; //'a' for deceleration
       eggData[1] = NODEID;
 
       if (highGforce > 35) 
       {
-        highGforce = 35;  //it should never be greater than 35!
+        highGforce = 35;  //it should not go above this
       }
 
       eggData[2] = highGforce;
       eggData[3] = impactAngle;
-
-      if (averageValueThrow > 99) {
-        averageValueThrow = 99; //unlikely to get this big but clamping value
-      }
-
       eggData[4] = 0;
 
-      if (totalFreefallTime < 10) {
+      if (totalFreefallTime < 10) 
+      {
         totalFreefallTime = 10;
       }
 
-      if (totalFreefallTime > 9999) {
+      //overflow guard
+      if (totalFreefallTime > 9999) 
+      {
         totalFreefallTime = 9999;
       }
 
@@ -586,25 +586,26 @@ void loop(void)
       byte secondByte = findSecondByte(totalFreefallTime);
       eggData[6] = secondByte;
 
-      eggData[7] = 0; //future
-      eggData[8] = 0; //future
-      eggData[9] = 0;  //future
+      eggData[7] = 0; //empty
+      eggData[8] = 0; //empty
+      eggData[9] = 0; //empty
 
-      if (Bluefruit.connected()) {
-
-        hrmc.notify(eggData, sizeof(eggData));   // Note: We use .notify instead of .write!
+      if (Bluefruit.connected()) 
+      {
+        //send the data packet
+        hrmc.notify(eggData, sizeof(eggData));
+        //start timer to prevent extra packets being sent.
+        waitTimer.setTime(waitTime);
       } else {
         Serial.println("BLE not connected");
       }
 
       Serial.println("************************");
-      Serial.println("Sent Data Packet");
+      Serial.println("Data Packet");
       for(int i = 0; i < 9; i++)
-      {
-        
+      {        
         Serial.print(eggData[i]);
         Serial.print(",");
-
       }
       Serial.println();
       Serial.println("************************");
@@ -615,8 +616,6 @@ void loop(void)
     }
   } else
   {
-    //Serial.println(now-lastActiveMode);
-
     if (now - lastActiveMode > sleepTime) //after 30 minutes of not connecting... go to low power mode
     {
       goingIntoLowPowerFlag = 0;
@@ -629,7 +628,7 @@ void loop(void)
   if (goingIntoLowPowerFlag == 0 && alreadyWent == 0) //going to low power mode!
   {
     Serial.println("going into low power mode");
-    Bluefruit.setTxPower(-16);  //set to low power
+    Bluefruit.setTxPower(-8);  //set to low power
     alreadyWent = 1;
     waitForEvent();  //low power?
 

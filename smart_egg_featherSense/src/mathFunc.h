@@ -158,15 +158,12 @@ int findHeight(long currtotalFreefallTime)
   #define totalFalltime currtotalFreefallTime/1000
   
   float freeSpeed = initialVel + gravity*totalFalltime;
-  float height = 0.5 * gravity * totalFalltime;
-
+  
   Serial.print("Free fall speed before impact in millis: ");
   Serial.println(currtotalFreefallTime);
   Serial.print("Free fall speed before impact in millis: ");
   Serial.println(totalFalltime);    
   Serial.print("Free fall speed before impact in m/2: ");
   Serial.println(freeSpeed);
-  Serial.print("Height at impact");
-  Serial.print(height);
-  Serial.println(" M");
+
 }
