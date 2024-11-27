@@ -54,7 +54,7 @@
 #include <Timer.h>
  
 MoToTimer waitTimer;
-uint16_t waitTime = 5000;
+uint16_t waitTime = 8000;
 
 Adafruit_LSM6DS3TRC mma = Adafruit_LSM6DS3TRC();
 Adafruit_BMP280 bmp280; 
@@ -163,7 +163,7 @@ bool debounceFreefall = 0;
 
 String stringSend;
 
-int sendBatteryInterval = 5000; //send battery data every 30 seconds
+int sendBatteryInterval = 20000; 
 long lastTimeSentBatteryData = 0;
 
 
@@ -193,11 +193,11 @@ CRGB led[1];
 void setup()
 {
   FastLED.addLeds<NEOPIXEL, 8>(led, 1);
-  FastLED.setBrightness(10);
+  FastLED.setBrightness(1);
   led[0] = CRGB::Red;
   FastLED.show();
 
-  // while(!Serial)
+   //while(!Serial)
     Serial.begin(115200);
 
   pinMode(13,OUTPUT);
@@ -273,19 +273,22 @@ void setup()
   Serial.println("\nAdvertising");
   Bluefruit.Advertising.start();
 
-  Serial.println("setting BLE power to -16");
-  Bluefruit.setTxPower(-16);
+  Serial.println("setting BLE power to 8");
+  Bluefruit.setTxPower(8);
 
+  // Wire.end();
   Wire.setClock(100000);
-
+  // Wire.begin();
+ 
   if (!mma.begin_I2C()) {
-    Serial.println("Couldnt start");
+    Serial.println("Can't start accel...");
     while (1);
   }
 
   Serial.println("LSM6DS3TRC found!");
     
   Serial.println("leaving setup");
+  waitTimer.setTime(1);
 }
 
 void startAdv(void)
@@ -353,7 +356,7 @@ void connect_callback(uint16_t conn_handle)
 
   //going to high power
   Serial.println("Setting to full transmission power");
-  Bluefruit.setTxPower(12); // goes to high power when connecting bo ble
+  Bluefruit.setTxPower(8); // goes to high power when connecting bo ble
  
 
   lastActiveMode = now; //indicating that we have activity.... so we stay in high power mode for at least 30 min TBD
@@ -373,7 +376,7 @@ void disconnect_callback(uint16_t conn_handle, uint8_t reason)
   Serial.println("Advertising!");
   bleConnected = false;
   alreadyWent = 0;  //flag that lets device go into low power after disconnected
-
+  Serial.println("leaving Dissconnect Callback");
 }
 
 void cccd_callback(BLECharacteristic& chr, uint16_t cccd_value)
@@ -400,6 +403,15 @@ void cccd_callback(BLECharacteristic& chr, uint16_t cccd_value)
 void loop(void)
 {
   now = millis();
+
+  if(!bleConnected)
+  {
+  led[0] = CRGB::Red;
+  FastLED.show();
+  }else{
+  led[0] = CRGB::Black;
+  FastLED.show();
+  }
 
   if (bleConnected)
   {
@@ -441,7 +453,7 @@ void loop(void)
         lastActiveMode = now;
         if (activeLowPowerFlag) //Wakeing up set TX to full
         {
-          Bluefruit.setTxPower(12);
+          Bluefruit.setTxPower(8);
           Serial.println("device is moving around after being in Low Power mode for 45min, going to high power mode");
           activeLowPowerFlag = 0;
         }
@@ -532,7 +544,7 @@ void loop(void)
       }
     }
 
-    if (decelerationTime > decelerationThreshold && !waitTimer.running()) 
+    if (decelerationTime > decelerationThreshold) 
     { 
       
       Serial.println("Deceleration time reached...");
@@ -590,29 +602,27 @@ void loop(void)
       eggData[8] = 0; //empty
       eggData[9] = 0; //empty
 
-      if (Bluefruit.connected()) 
+      if (Bluefruit.connected() && !waitTimer.running()) 
       {
         //send the data packet
         hrmc.notify(eggData, sizeof(eggData));
         //start timer to prevent extra packets being sent.
         waitTimer.setTime(waitTime);
-      } else {
-        Serial.println("BLE not connected");
-      }
 
-      Serial.println("************************");
-      Serial.println("Data Packet");
-      for(int i = 0; i < 9; i++)
-      {        
+        Serial.println("************************");
+        Serial.println("Data Packet");
+        for(int i = 0; i < 9; i++)
+        {        
         Serial.print(eggData[i]);
         Serial.print(",");
-      }
-      Serial.println();
-      Serial.println("************************");
+        }
+        Serial.println();
+        Serial.println("************************");
 
-      Serial.println("impact angle(0-180)");
-      Serial.print("aTan: ");
-      Serial.println(impactAngle);
+        Serial.println("impact angle(0-180)");
+        Serial.print("aTan: ");
+        Serial.println(impactAngle);
+      } 
     }
   } else
   {

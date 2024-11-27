@@ -126,9 +126,6 @@ void calibrate()
     sensors_event_t temp;
     mma.getEvent(&accel, &gyro, &temp);
 
-    Serial.print("Calibration Step: ");
-    Serial.println(i);
-
     x1 = accel.acceleration.x;
     x2 = x1 + x2;
     y1 = accel.acceleration.y;
@@ -148,6 +145,7 @@ void calibrate()
   zNeutral = z2 / calibrationRate;
   Serial.print("z Base:");
   Serial.println(zNeutral);
+  sendBatteryData();
 
 }
 
