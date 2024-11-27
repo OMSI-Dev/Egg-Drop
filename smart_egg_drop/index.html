@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OMSI</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Nunito:300,400,600" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Bowlby+One" rel="stylesheet">
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+</head>
+<body>
+    <div id="preloader">
+        <div id="preloader-egg-container">
+            <img id="loading" src="img/loading_egg.png">
+        </div>
+    </div>
+    <div id="landing-screen">
+        <div class="home-page">
+            <img src="img/landing1.jpg" class="img-responsive bg-home">
+            <div class="container">
+                <div class="head-dashboard">
+                    <h1><img src="img/eggdroplogo.png"></h1>
+                </div>
+                <div class="content">
+                    <h3>Smart</h3>
+                </div>
+                <div class="footer footer-home">
+                    <ul class="menu">
+                        <li><a onclick="handleClick('start')"><img src="img/play.png">PLAY</a></li>
+                        <li><a onclick="handleClick('doc')"><img src="img/guide.png">USER GUIDE</a></li>
+                        <li><a href="#" onclick="runShutdown()"><img src="img/guide.png">SHUTDOWN</a></li>          
+                        <!-- <li><a href="OMSISmartEggDropEducatorGuide.pdf" download><img src="img/download.png" style="margin-bottom: 1px;">DOWNLOAD EDUCATORS GUIDE</a></li>-->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="user-guide">
+        <div class="main-page">
+            <img src="img/mainscreen1.jpg" class="img-responsive bg-home">
+            <div class="container">
+                <div class="main-content">
+                    <h3>Smart</h3>
+                    <div class="list-play">
+                        <div class="point">
+                            <h4>1</h4>
+                            <p>Design and build your container using any of the provided materials. There are no restrictions or
+                            guidelines for appearences of your container.</p>
+                        </div>
+                        <div class="point">
+                            <h4>2</h4>
+                            <p>Show your container to a facilitator.</p>
+                        </div>
+                        <div class="point">
+                            <h4>3</h4>
+                            <p>Test your design when the drop zone is clear. For best results your container and egg should be
+                            dropped from at least 8 feet. Throwing will give false readings, just drop striaght down!</p>
+                        </div>
+                        <div class="point">
+                            <h4>4</h4>
+                            <p>Review your egg data to see if your egg survived! And Try again and see if you can improve your
+                            design.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer">
+                    <ul class="menu">
+ 
+                        <li class="play"><a onclick="handleClick('start')"><img src="img/play.png">PLAY</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="play-screen" class="dashboard">
+        <div class="dashboard-content">
+            <div class="head">
+                <div class="container">
+                    <div class="header-section-left">
+                        <a onclick="handleClick('play')"><img src="img/homeicon.png"></a>
+                        <a onclick="handleClick('doc')"><img src="img/fileicon.png"></a>
+                        <a onclick="connectBle()"><img src="img/bluetoothicon.png"></a>
+                    </div>
+                    <div class="header-section-right">
+                        <div class="pull-right battery-container">
+                            <div id="egg_battery_6" class="purple egglife">6</div>
+                            <div class="battery"><div class="battery-inner"><div id="egg_6" class="fill" style=" width: 0%;"></div></div><div  class="terminal"></div><span id="egg_detail_6">100%</span></div>
+                        </div>
+                        <div class="pull-right battery-container">
+                            <div id="egg_battery_5" class="red egglife">5</div>
+                            <div class="battery"><div class="battery-inner"><div id="egg_5" class="fill" style=" width: 0%;"></div></div><div  class="terminal"></div><span id="egg_detail_5">99%</span></div>
+                        </div>
+                        <div class="pull-right battery-container">
+                            <div id="egg_battery_4" class="yellow egglife">4</div>
+                            <div class="battery"><div class="battery-inner"><div id="egg_4" class="fill" style=" width: 0%;"></div></div><div  class="terminal"></div><span id="egg_detail_4">100%</span></div>
+                        </div>
+
+                        <div class="pull-right battery-container">
+                            <div id="egg_battery_3" class="green egglife">3</div>
+                            <div class="battery"><div class="battery-inner"><div id="egg_3" class="fill" style=" width: 0%;"></div></div><div  class="terminal"></div><span id="egg_detail_3">10%</span></div>
+
+                        </div>
+                        <div class="pull-right battery-container">
+                            <div id="egg_battery_2" class="orange egglife" >2</div>
+                            <div class="battery"><div class="battery-inner"><div id="egg_2" class="fill" style=" width: 0%;"></div></div><div  class="terminal"></div><span id="egg_detail_2">30%</span></div>
+                        </div>
+                        <div class="pull-right battery-container">
+                            <div id="egg_battery_1" class="blue egglife">1</div>
+                            <div class="battery"><div class="battery-inner"><div id="egg_1" class="fill" style=" width: 0%;"></div></div><div  class="terminal"></div><span id="egg_detail_1">100%</span></div>
+                        </div>
+                    </div>
+                    <div class="header-section-mid">
+                        <div id="egg-nos" class="egg-number"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-play-area">
+                <ul class="nav nav-tabs">
+                    <li class="active" style="margin-left:10%;">
+                        <a data-toggle="tab" href="#dashboard">DASHBOARD</a>
+                    </li>
+                    <li>
+                        <a data-toggle="tab" href="#scores">SCORES</a>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade in active" id="dashboard">
+                        <div class="dashboard-play">
+                            <div class="col-md-9 col-sm-9 col-xs-9 no-padding">
+                                <div class="heading">
+                                    <h2 id="egg-text">Oops, your egg has BROKEN!</h2>
+                                </div>
+                                <div class="wrapper">
+                                    <div class="rang">
+                                        <div class="egg-meter">
+                                            <div class="pin">
+                                                <div class="position">
+                                                    <img src="img/pin_cropped.png" id="egg-status">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-sm-2 col-xs-2 no-padding">
+                               <!--  <div class="egg-drop-height text-center">
+                                    <h2 class="text-center">TRAVEL HEIGHT</h2>
+                                    <div class="ruler">
+                                        <div class="egg" id="egg-position" style="bottom:13.3%"></div>
+                                    </div>
+                                    <p class="text-center">
+                                        <span class="blue-text" id="feet">0</span><span class="feet-label"> feet </span><span class="blue-text" id="inches">0</span><span class="inches-label"> inches</span>
+                                    </p>
+                                </div> -->
+                            </div>
+                            <div class="col-md-3 col-sm-3 col-xs-3 no-padding">
+                                <div class="egg-drop-speed text-center">
+                                    <h2 class="text-center">TRAVEL TIME</h2>
+                                    <p class="text-center"><span class="blue-text" id="travel-time">0</span> milliseconds</p>
+                                </div>
+                                <div class="egg-drop-angle text-center">
+                                    <h2 class="text-center">IMPACT ANGLE</h2>
+                                    <p class="text-center"><span class="blue-text" id="angle">0</span> degrees</p>
+                                    <div id="angle-container">
+                                        <img src="img/small_angle_pointer.png" id="angle-pointer">
+                                        <img src="img/orange_battery.png" id="angle-egg">
+                                    </div>
+                                </div>
+                                <div class="egg-drop-force text-center">
+                                    <h2 class="text-center">FORCE</h2>
+                                    <p class="text-center"><span class="blue-text" id="force">0</span> G-Forces </p>
+                                    <p class="text-left small">*G-Force is an object's rate of acceleration due to gravity at the Earth's surface.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="scores">
+                        <div class="scores">
+                            <div class="score-box blue-border">
+                                <div class="col-md-2 col-sm-2 no-padding">
+                                    <div class="egg-number egg-number-blue text-center">
+                                        1
+                                    </div>
+                                </div>
+                                <div class="col-md-10 col-sm-10 no-padding">
+                                    <div class="table-responsive">
+                                        <table class="table score-table">
+                                            <thead>
+                                                <tr id="egg_head_1">
+                                                    <th style="width:150px;"></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr class="row1" id="option11">
+                                                    <td><img src="img/eggicon.png"><span class="theading">G-FORCE</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <!-- <tr class="row1" id="option21">
+                                                    <td><img src="img/rulericon.png"><span class="theading">HEIGHT</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr> -->
+                                                <tr class="row1" id="option31">
+                                                    <td><img src="img/timeicon.png"><span class="theading">MILLISECONDS</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr class="row1" id="option41">
+                                                    <td><img src="img/angleicon.png"><span class="theading">ANGLE</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="score-box orange-border">
+                                <div class="col-md-2 col-sm-2 no-padding">
+                                    <div class="egg-number egg-number-orange text-center">
+                                        2
+                                    </div>
+                                </div>
+                                <div class="col-md-10 col-sm-10 no-padding">
+                                    <div class="table-responsive">
+                                        <table class="table score-table">
+                                            <thead>
+                                                <tr id="egg_head_2">
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr class="row1" id="option12">
+                                                    <td><img src="img/eggicon.png"><span class="theading">G-FORCE</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <!-- <tr class="row1" id="option22">
+                                                    <td><img src="img/rulericon.png"><span class="theading">HEIGHT</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr> -->
+                                                <tr class="row1" id="option32">
+                                                    <td><img src="img/timeicon.png"><span class="theading">MILLISECONDS</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr class="row1" id="option42">
+                                                    <td><img src="img/angleicon.png"><span class="theading">ANGLE</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="score-box green-border">
+                                <div class="col-md-2 col-sm-2 no-padding">
+                                    <div class="egg-number egg-number-green text-center">
+                                        3
+                                    </div>
+                                </div>
+                                <div class="col-md-10 col-sm-10 no-padding">
+                                    <div class="table-responsive">
+                                        <table class="table score-table">
+                                            <thead>
+                                                <tr id="egg_head_3">
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr class="row1" id="option13">
+                                                    <td><img src="img/eggicon.png"><span class="theading">G-FORCE</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <!-- <tr class="row1" id="option23">
+                                                    <td><img src="img/rulericon.png"><span class="theading">HEIGHT</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr> -->
+                                                <tr class="row1" id="option33">
+                                                    <td><img src="img/timeicon.png"><span class="theading">MILLISECONDS</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr class="row1" id="option43">
+                                                    <td><img src="img/angleicon.png"><span class="theading">ANGLE</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="score-box yellow-border">
+                                <div class="col-md-2 col-sm-2 no-padding">
+                                    <div class="egg-number egg-number-yellow text-center">
+                                        4
+                                    </div>
+                                </div>
+                                <div class="col-md-10 col-sm-10 no-padding">
+                                    <div class="table-responsive">
+                                        <table class="table score-table">
+                                            <thead>
+                                                <tr id="egg_head_4">
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr class="row1" id="option14">
+                                                    <td><img src="img/eggicon.png"><span class="theading">G-FORCE</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <!-- <tr class="row1" id="option24">
+                                                    <td><img src="img/rulericon.png"><span class="theading">HEIGHT</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr> -->
+                                                <tr class="row1" id="option34">
+                                                    <td><img src="img/timeicon.png"><span class="theading">MILLISECONDS</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr class="row1" id="option44">
+                                                    <td><img src="img/angleicon.png"><span class="theading">ANGLE</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="score-box red-border">
+                                <div class="col-md-2 col-sm-2 no-padding">
+                                    <div class="egg-number egg-number-red text-center">
+                                        5
+                                    </div>
+                                </div>
+                                <div class="col-md-10 col-sm-10 no-padding">
+                                    <div class="table-responsive">
+                                        <table class="table score-table">
+                                            <thead>
+                                                <tr id="egg_head_5">
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr class="row1" id="option15">
+                                                    <td><img src="img/eggicon.png"><span class="theading">G-FORCE</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <!-- <tr class="row1" id="option25">
+                                                    <td><img src="img/rulericon.png"><span class="theading">HEIGHT</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr> -->
+                                                <tr class="row1" id="option35">
+                                                    <td><img src="img/timeicon.png"><span class="theading">MILLISECONDS</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr class="row1" id="option45">
+                                                    <td><img src="img/angleicon.png"><span class="theading">ANGLE</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="score-box purple-border">
+                                <div class="col-md-2 col-sm-2 no-padding">
+                                    <div class="egg-number egg-number-purple text-center">
+                                        6
+                                    </div>
+                                </div>
+                                <div class="col-md-10 col-sm-10 no-padding">
+                                    <div class="table-responsive">
+                                        <table class="table score-table">
+                                            <thead>
+                                                <tr id="egg_head_6">
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr class="row1" id="option16">
+                                                    <td><img src="img/eggicon.png"><span class="theading">G-FORCE</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr class="row1" id="option26">
+                                                    <td><img src="img/rulericon.png"><span class="theading">HEIGHT</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr class="row1" id="option36">
+                                                    <td><img src="img/timeicon.png"><span class="theading">MILLISECONDS</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr class="row1" id="option46">
+                                                    <td><img src="img/angleicon.png"><span class="theading">ANGLE</span></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="play-footer"></div>
+
+
+        <script src="js/jquery.min.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="js/loader.js"></script>
+
+        <script>
+            // Wait for window load
+            $(window).load(function() {
+                // Animate loader off screen
+                $("#preloader").fadeOut(1000);
+            });
+        </script>
+
+        <script>
+           //----------------BLE FUNCTIONS
+
+           //$("#connectBle").click(function(){
+             function connectBle(){
+             //alert("connectBle");
+             navigator.bluetooth.requestDevice({
+               filters: [
+               { services: [0x180D] },
+                   {name: 'Bluefruit52'} //this is required on web ble  but not chrome
+                   ]
+               })
+             .then(device => device.gatt.connect())
+             .then(server => server.getPrimaryService(0x180D))
+             .then(service => {
+                 console.log("connected, got primary service");
+                 return Promise.all([
+                   service.getCharacteristic(0x2A37)
+                   .then(handleBleCharacteristic),
+                   ]);
+             });
+           }//);
+
+           function handleBleCharacteristic(characteristic) {
+               return characteristic.startNotifications()
+               .then(char => {
+                 characteristic.addEventListener('characteristicvaluechanged',
+                     onDataChanged);
+             });
+           }
+
+           function onDataChanged(event) {
+               let characteristic = event.target;
+               parseBleData(characteristic.value);
+           }
+
+           function parseBleData(data) {
+               console.log("receiving 10 bytes");
+               console.log(data.getUint8(0));
+               console.log(data.getUint8(1));
+               console.log(data.getUint8(2));
+               console.log(data.getUint8(3));
+               console.log(data.getUint8(4));
+               console.log(data.getUint8(5));
+               console.log(data.getUint8(6));
+               console.log(data.getUint8(7));
+               console.log(data.getUint8(8));
+               console.log(data.getUint8(9));
+               let result = {};
+             if(data.getUint8(0) == 86){ //86 is v for voltage.. //"~Heart Beat #1 at 33%-0.00v"
+                var dataArray = new Array();
+                dataArray[0] = 86;
+                dataArray[1] = data.getUint8(1);
+                dataArray[2] = data.getUint8(2);
+               updateBattery(dataArray);
+               return;
+           }
+
+             if(data.getUint8(0) == 65) //65 is 'a' for acceleration"
+             {
+                var dataArray = new Array();
+                dataArray[0] = 65;
+                dataArray[1] = data.getUint8(1); //egg id
+                dataArray[2] = data.getUint8(2); //highestDecel
+                dataArray[3] = data.getUint8(3); //impactAngle
+                dataArray[4] = data.getUint8(4); //averageValueThrown
+
+
+                var firstByte = data.getUint8(5);  //freefall ms first byte
+                var secondByte = data.getUint8(6); //freefall ms second byte
+                if(secondByte > 0)  //signifies over 255ms throw... broke into 2 bytes
+                {
+                  var bytes = new Uint8Array(2); <!-- length for 2 items -->
+                  bytes[0] = secondByte;
+                  bytes[1] = firstByte;
+
+                  dataArray[5] = ( ( (bytes[0] & 0xFF) << 8) | (bytes[1] & 0xFF) );  //combines 2 bytes to an integer
+              }
+              else
+              {
+                  dataArray[5] = firstByte;
+              }
+                //console.log(dataArray[5]);
+                var currentDate = new Date();
+                var h = currentDate.getHours(), m = currentDate.getMinutes(), s = currentDate.getSeconds();
+                var _time = (h > 12) ? (h - 12 + ':' + m + ':' + s + ' PM') : (h + ':' + m + ':' + s + ' AM');
+                var weekday = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                var day = weekday[currentDate.getDay()];
+                var dayTime = day + ' ' + _time;
+                dataArray[8] = 0;
+                dataArray[9] = 5;
+                dataArray[10] = dayTime;
+                console.log(dayTime);
+
+                playGame(dataArray);
+                console.log("starting preloader");
+                $("#preloader").show();
+                setTimeout(function() {
+                  $('#preloader').fadeOut();
+              }, 1500);
+                //$('#preloader').fadeOut();
+
+                return;
+            }
+        }
+           //-----------------------BLE FUNCTIONS
+       </script>
+
+       <script>
+            var eggStates = {1:null, 2:null, 3:null, 4:null, 5:null, 6:null};
+            var eggColors = ["placeholder", "blue", "orange", "green", "yellow", "red", "purple"];
+            var eggCheck = setInterval(checkEggs, 8000);
+
+            // hide egg header number when showing scores tab
+            $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+                var target = $(e.target).attr("href") // activated tab
+                if(target == "#scores") {$("#egg-nos").css("opacity", 0);}
+                else {$("#egg-nos").css("opacity", 1);}
+            });
+
+            function handleClick(action) {
+                if (action == 'doc') {
+                    $('#landing-screen').hide(1000);
+                    $('#user-guide').show(1000);
+                    $('#play-screen').hide(1000);
+                }
+                if (action == 'start') {
+                    $('#landing-screen').hide(1000);
+                    $('#user-guide').hide();
+                    $('#play-screen').show(1000);
+                    var getUint8 = new Array();
+                    getUint8[0] = 22;
+                    playGame(getUint8);
+                }
+                if (action == 'play') {
+                    $('#landing-screen').show(1000);
+                    $('#user-guide').hide(1000);
+                    $('#play-screen').hide(1000);
+                }
+            }
+
+            var miliseconds;
+            $(document).ready(function () {
+                //this stuff just popultates the first blank page with data......
+                var currentDate = new Date();
+                var h = currentDate.getHours(), m = currentDate.getMinutes(), s = currentDate.getSeconds();
+                var _time = (h > 12) ? (h - 12 + ':' + m + ':' + s + ' PM') : (h + ':' + m + ':' + s + ' AM');
+                var weekday = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                var day = weekday[currentDate.getDay()];
+                var dayTime = day + ' ' + _time;
+                var dataArray = new Array();
+                dataArray[0] = 65;
+                dataArray[1] = 1; // egg id
+                dataArray[2] = 0; // g meter
+                dataArray[3] = 0; // angle
+                dataArray[4] = 0;
+                dataArray[5] = 0; // ms
+                dataArray[6] = 0; // g force
+                dataArray[7] = 5; // height
+                dataArray[8] = 0;
+                dataArray[9] = 5;
+                dataArray[10] = dayTime;
+                showData(dataArray);
+
+                // Safari throws error when accessing local storage, so wrap in try/catch
+                try {
+                    localStorage['egg1']=''; //clears the localStorage of egg stats
+                    localStorage['egg2']='';
+                    localStorage['egg3']='';
+                    localStorage['egg4']='';
+                    localStorage['egg5']='';
+                    localStorage['egg6']='';
+                } catch (e) {
+                    // handle differently, if needed
+                }
+            });
+
+            function playGame(dataArray) {
+                showData(dataArray);
+                // Safari throws error when accessing local storage, so wrap in try/catch
+                try {
+                    showEggScore(localStorage['egg1'], 1);
+                    showEggScore(localStorage['egg2'], 2);
+                    showEggScore(localStorage['egg3'], 3);
+                    showEggScore(localStorage['egg4'], 4);
+                    showEggScore(localStorage['egg5'], 5);
+                    showEggScore(localStorage['egg6'], 6);
+                } catch (e) {
+                    // handle differently, if needed
+                }
+            }
+
+            function updateBattery(batteryArray) {
+                var result = new Object();
+                if(batteryArray[0] == 86) { //this should always be true
+                    result.eggNumber = batteryArray[1];
+                    result.percent = batteryArray[2];
+                    $("#egg_battery_"+result.eggNumber).siblings(".battery").css("opacity", 1);
+                    $("#egg_battery_"+result.eggNumber).removeClass("gray");
+                    $("#egg_battery_"+result.eggNumber).addClass(eggColors[result.eggNumber]);
+                    $('#egg_detail_' + result.eggNumber).empty();
+                    $('#egg_detail_' + result.eggNumber).append(result.percent + '%');
+                    $('#egg_' + result.eggNumber).css("width", result.percent + '%');
+                    eggStates[result.eggNumber] = Date.now();
+                }
+            }
+
+            function checkEggs() {
+                // gray out any eggs that haven't sent data in awhile
+                for(var i = 1; i < 7; i++) {
+                    // check last time updated
+                    if(!eggStates[i] || Date.now() - eggStates[i] > 20000) { // twenty seconds
+                        // gray out if null or more than twenty seconds have elapsed
+                        $("#egg_battery_"+i).siblings(".battery").css("opacity", 0.3);
+                        $("#egg_battery_"+i).addClass("gray");
+                        $("#egg_battery_"+i).removeClass(eggColors[i]);
+                        $('#egg_detail_' + i).empty();
+                        $('#egg_' + i).css("width", '0%');
+                    }
+                }
+            }
+
+            function showData(getUint8) {
+                var dataStore = [];
+                var result = new Object();
+
+                if (getUint8[0] == 65) {  //this is left over... it is always 65 at this point...
+                    //check and cache data//
+                    var dropHeight = dropHeightGravity(getUint8[5]); //returns height in ft..... 4.155 * Math.pow((egg.fallTime / 1000), 2) * 3.28;
+                    console.log(dropHeight);
+                    getUint8[7] = dropHeight;  //inches is not storing right now....
+
+                    var eggNum = getUint8[1];
+                    console.log("egg storage:"+eggNum);
+
+                    // Safari throws error when accessing local storage, so wrap in try/catch
+                    try {
+                        if (typeof localStorage['egg'+eggNum] !== "undefined") {
+                            var new_value = localStorage['egg'+eggNum].split("@");
+                            var arraylength = new_value.length;
+                            var new_array;
+                            if (arraylength > 6) {
+                                new_value.splice(-1, 1);
+                                new_array = new_value.join("@");
+                                localStorage['egg'+eggNum] = new_array;
+                            }
+                        }
+                        dataStore.push(getUint8);
+                        if (localStorage['egg'+eggNum] != '') {
+                            dataStore.push('@');
+                        }
+                        dataStore.push(localStorage['egg'+eggNum]);
+                        localStorage['egg'+eggNum] = dataStore;
+                    } catch (e) {
+                        // handle differently, if needed
+                    }
+
+                    //check and cache data end//
+                    //show data//
+                    result.type = getUint8[0];
+                    result.eggNumber = getUint8[1];
+                    result.highestDecel = getUint8[2];
+                    result.impactAngle = getUint8[3];
+                    result.averageValueThrow = getUint8[4];
+                    result.totalFreefallTime = getUint8[5]; // milisecond
+                    result.gforce = getUint8[2]; // g force
+                    heightinfeet = dropHeight;
+                    res = String(heightinfeet).split(".");
+                    var feet = res[0];
+                    var inches = Math.round(+("."+res[1])*12);
+                    $(".feet-label, .inches-label").show();
+                    $(".inches-label").html(" inches");
+                    if(String(inches).length > 1) {
+                        if(inches == 12) {
+                            feet = +feet + 1;
+                            inches = 0;
+                        } else {
+                            $(".inches-label").html(" in");
+                        }
+                    }
+                    if(feet >= 10) {
+                        feet = "10+";
+                        inches = "";
+                        $(".inches-label").hide();
+                    }
+                    if(feet < 1) {
+                        feet = "";
+                        $(".feet-label").hide();
+                    }
+
+
+                    miliseconds = result.totalFreefallTime;
+                    var rulerHeight = $(".ruler").height()-20; // there's a little space at bottom & top
+                    // bottom of ruler is at 50px
+                    var eggPos = rulerHeight*(heightinfeet/10) + 50;
+                    eggPos = Math.max(50, eggPos);
+                    eggPos = Math.min(406, eggPos);
+
+                    $("#egg-position").css("bottom", eggPos+"px");
+                    $('#feet').html(feet);
+                    $("#inches").html(inches);
+                    $('#force').html(result.highestDecel);
+                    $('#travel-time').html(result.totalFreefallTime);
+                    $("#angle").html(result.impactAngle);
+                    $("#angle-egg, #angle-pointer").css({
+                        "-ms-transform": "rotate("+(result.impactAngle)+"deg)",
+                        "-webkit-transform": "rotate("+(result.impactAngle)+"deg)",
+                        "transform": "rotate("+(result.impactAngle)+"deg)"
+                    });
+                    $("#angle-egg").attr('src', "img/"+eggColors[result.eggNumber]+"_battery.png");
+
+                    if (result.highestDecel >= 0 && result.highestDecel <= 10) {
+                        var snd = new Audio("Egg_drop_audios/yelling.wav");
+                        setTimeout(function(){
+                            snd.play();
+                        }, 3500);
+                        $('#egg-text').empty();
+                        $('#egg-text').append('Great job, your egg is SAFE!');
+                        $("#egg-status").removeClass("fullbroke halfbroke").addClass("not-broke");
+                    } else if (result.highestDecel > 11 && result.highestDecel <= 22) {
+                        var crack = new Audio("Egg_drop_audios/almostcrack.wav");
+                        setTimeout(function(){
+                            crack.play();
+                        }, 3200);
+                        var snd = new Audio("Egg_drop_audios/2ndlast.wav");
+                        setTimeout(function(){
+                            snd.play();
+                        }, 3800);
+                        $('#egg-text').empty();
+                        $('#egg-text').append('Oops, your egg has CRACKED!');
+                        $("#egg-status").removeClass("fullbroke not-broke").addClass("halfbroke");
+                    } else if (result.highestDecel >= 23) {
+                        var crack = new Audio("Egg_drop_audios/crack.wav");
+                        setTimeout(function(){
+                            crack.play();
+                        }, 3200);
+                        var snd = new Audio("Egg_drop_audios/last.wav");
+                        setTimeout(function(){
+                            snd.play();
+                        }, 3800);
+                        $('#egg-text').empty();
+                        $('#egg-text').append('Oh no, your egg is BROKEN!');
+                        $("#egg-status").removeClass("not-broke halfbroke").addClass("fullbroke");
+                    }
+                    $("#egg-nos").empty();
+                    $("#egg-nos").append(result.eggNumber);
+                    $("#egg-nos").attr('class', 'egg-number-'+eggColors[result.eggNumber]);
+                    $(".egg").css('background', 'url("img/'+eggColors[result.eggNumber]+'_pointer.png")');
+                    $("#force, #angle, #feet, #inches, #travel-time").attr('class', eggColors[result.eggNumber]+'-text');
+                }
+            }
+
+            //score card//
+            function showEggScore(egg_data, egg_no) {
+                if (typeof egg_data != "undefined") {
+                    // console.log(egg_data);
+                    var egg_1 = egg_data.split("@,");
+                    var heading = '<th></th>';
+                    var option1 = '<td><img src="img/eggicon.png"><span class="theading"> G-FORCE</span></td>';
+                    var option2 = '<td><img src="img/rulericon.png"> <span class="theading">HEIGHT</span></td>';
+                    var option3 = '<td><img src="img/timeicon.png"><span class="theading"> MILLISECONDS</span></td>';
+                    var option4 = '<td><img src="img/angleicon.png"><span class="theading"> ANGLE</span></td>';
+                    for (var i = 0; i < 7; i++) {
+                        var egg_items = egg_1[i];
+                        if (typeof egg_items != "undefined") {
+                            var items = egg_items.split(",");
+                            //console.log(items[10]);
+                            if (typeof items[10] != "undefined") { //time and date
+                                var items_detail = items[10].split(" ");
+                                heading += '<th>' + items_detail[0] + '<br>' + items_detail[1] + '<span class="small"> ' + items_detail[2] + '</span></th>';
+                            }
+                            if (typeof items[2] != "undefined") { //g-force
+                                var gforce = items[2];
+                                option1 += '<td><span class="theading">' + gforce + ' Gs</span></td>';
+                            }
+                            if (typeof items[7] != "undefined") { //height
+                                var heightinfeet = items[7];
+                                res = String(heightinfeet).split(".");
+                                if (res.length > 1) {
+                                    var new_inchwith='.'+res[1]
+                                    var inches = new_inchwith * 12;
+                                    var new_inches = Math.round(inches).toFixed(0);
+                                    //var new_inches = String(inches).split(".");
+                                } else {
+                                    console.log("less than one foot");
+                                    var new_inches = heightinfeet * 12;  //for 0 - 12 inches
+                                    new_inches = Math.round(inches).toFixed(0);
+                                }
+                                option2 += '<td><span class="theading">' + res[0] + ' ft ' + new_inches + ' in</span></td>';
+                                  //option2 += '<td><span class="theading">' + heightfor + 'ft</span></td>';
+                            }
+                            if (typeof items[5] != "undefined")  {
+                                var millisec = items[5];
+                                option3 += '<td><span class="theading">' + millisec + ' ms</span></td>';
+                            }
+                            if (typeof items[3] != "undefined")  {
+                                var angle = items[3];
+                                option4 += '<td><span class="theading">' + angle + 'º</span></td>';
+                            }
+                        } else {
+                            heading += '<th><br><span class="small"></span></th>';
+                            option1 += '<td></td>';
+                            option2 += '<td></td>';
+                            option3 += '<td></td>';
+                            option4 += '<td></td>';
+                        }
+                    }
+                    $('#egg_head_' + egg_no).empty();
+                    $('#egg_head_' + egg_no).append(heading);
+                    $('#option1' + egg_no).empty();
+                    $('#option1' + egg_no).append(option1);
+                    $('#option2' + egg_no).empty();
+                    $('#option2' + egg_no).append(option2);
+                    $('#option3' + egg_no).empty();
+                    $('#option3' + egg_no).append(option3);
+                    $('#option4' + egg_no).empty();
+                    $('#option4' + egg_no).append(option4);
+                }
+            }
+            //score card//
+            // Takes freefall time in ms, returns height in ft
+            function dropHeightGravity(freefall) {
+                var gravity = 9.8;
+                // formula derived from 1/2(gravity)(time^2)
+                // converted to ft using 3.28084ft/m
+                //return (gravity / 2) * Math.pow((freefall / 1000), 2) * 3.28084;  //returns height in ft
+
+                return 10
+            }
+    
+            function runShutdown() 
+            {
+                fetch("/shutdown")
+                .then(() => alert("Shutting down!"))
+                .catch(() => alert("Failed to Shutdown!"));
+            }
+
+    </script>
+</body>
+
+</html>
